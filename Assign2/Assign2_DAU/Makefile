@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-I
+CFLAGS=-I.
 CFLAGS+=-Wall
 #CFLAGS+=-DDEBUG
 FILES1=Transducer.cpp
