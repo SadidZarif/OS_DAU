@@ -1,10 +1,10 @@
-//DataCenter.h - The class for the Data Center
+//DataCenterRogue2.h - The class for the rogue2 Data Center
 //
 // History:
 // 05-May-22  M. Watler         Created.
 
-#ifndef _DATACENTER_H_
-#define _DATACENTER_H_
+#ifndef _DATACENTERROGUE2_H_
+#define _DATACENTERROGUE2_H_
 
 #include <arpa/inet.h>
 #include <iostream>
@@ -20,18 +20,18 @@
 static void shutdownHandler(int sig);
 void *recv_func(void *arg);
 
-class DataCenter {
+class DataCenterRogue2 {
     const int BUF_LEN=4096;
     bool is_running;
     bool is_subscribed;
     int dataCenterNo;
     int fd;
 public:
-    DataCenter(int num);
+    DataCenterRogue2(int num);
     int run();
     void shutdown();
     void ReceiveFunction();
-    static DataCenter* instance;
+    static DataCenterRogue2* instance;
 };
 
-#endif// _DATACENTER_H_
+#endif// _DATACENTERROGUE2_H_

